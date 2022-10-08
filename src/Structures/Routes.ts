@@ -2,6 +2,7 @@ import { Query } from './Query';
 
 export const Routes = {
   ME: 'https://api.spotify.com/v1/me',
+  CURRENTLY_PLAYING: 'https://api.spotify.com/v1/me/player/currently-playing',
   SPOTIFY_AUTH: (clientId: string, redirectURI: string, scopes: string[]) => {
     return `https://accounts.spotify.com/authorize?${new Query({ 
       response_type: 'code',

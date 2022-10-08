@@ -1,8 +1,10 @@
 import * as express from 'express';
+import * as mysql from 'mysql2';
 import 'dotenv/config';
 import fetch from 'node-fetch';
 import { Routes, TokenManager } from './Structures';
-import * as mysql from 'mysql2';
+import { download, roundImage, fitText } from './Utils';
+import { createCanvas, loadImage } from '@napi-rs/canvas';
 
 const connection: mysql.Connection = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -31,7 +33,7 @@ app.get('/callback', async (req, res) => {
       'Authorization': `Basic ${Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64')}`
     }
   })).json();
-  if(!tokenRequest.access_token || tokenRequest.error) return res.redirect('/authorize');
+  if (!tokenRequest.access_token || tokenRequest.error) return res.redirect('/authorize');
   const userRequest = await (await fetch(Routes.ME, {
     headers: {
       'Authorization': `${tokenRequest.token_type} ${tokenRequest.access_token}`
@@ -39,6 +41,60 @@ app.get('/callback', async (req, res) => {
   })).json();
   await tokenManager.setUserToken(userRequest.id, tokenRequest.access_token, tokenRequest.refresh_token, tokenRequest.expires_in);
   res.send('Success!');
+});
+
+app.get('/current/:userId', async (req, res) => {
+  const token = await tokenManager.getUserToken(req.params.userId);
+  if (!token) return res.json({ success: false, error: 'Invalid token' });
+
+  const currentRequest = await (await fetch(Routes.CURRENTLY_PLAYING, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })).json();
+  const canvas = createCanvas(500, 200);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#212121';
+  ctx.fillRect(0, 0, 500, 200);
+
+  // Album Art
+  const albumCanvas = createCanvas(200, 200);
+  const albumCtx = albumCanvas.getContext('2d');
+
+  await download(currentRequest.item.album.images[0].url, `./temp/${currentRequest.item.album.id}.png`);
+  const albumImage = await loadImage(`./temp/${currentRequest.item.album.id}.png`);
+  albumCtx.drawImage(albumImage, 0, 0, 200, 200);
+  ctx.drawImage(albumCanvas, 0, 0, 200, 200);
+
+  // Song Name
+  ctx.font = '30px sans-serif';
+  ctx.fillStyle = '#fff';
+  fitText(ctx, currentRequest.item.name, 260, 30);
+  ctx.fillText(currentRequest.item.name, 220, 50);
+
+  // Artist Name
+  ctx.font = '20px Arial';
+  ctx.fillStyle = '#959595';
+  fitText(ctx, currentRequest.item.artists[0].name, 260, 20);
+  ctx.fillText(currentRequest.item.artists[0].name, 220, 80);
+
+  // Progress Bar
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(220, 180, 250, 10);
+  ctx.fillStyle = '#1db954';
+  ctx.fillRect(220, 180, 250 * (currentRequest.progress_ms / currentRequest.item.duration_ms), 10);
+  ctx.fillStyle = '#0e5a29';
+  ctx.beginPath();
+  ctx.arc(220 + 250 * (currentRequest.progress_ms / currentRequest.item.duration_ms), 185, 5, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Progress Bar Text, place next to each other, progress:duration
+  ctx.font = '15px Arial';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(`${Math.floor(currentRequest.progress_ms / 1000 / 60)}:${Math.floor(currentRequest.progress_ms / 1000 % 60)} / ${Math.floor(currentRequest.item.duration_ms / 1000 / 60)}:${Math.floor(currentRequest.item.duration_ms / 1000 % 60)}`, 220, 170);
+
+  res.writeHead(200, { contentType: 'image/png' });
+  res.end(canvas.toBuffer('image/png'));
 });
 
 app.listen(3000, () => {
