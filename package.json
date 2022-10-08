@@ -1,0 +1,16 @@
+{
+  "name": "spotify-status",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OneAndonlyFinbar/spotify-status.git"
+  },
+  "author": "OneAndOnlyFinbar",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/OneAndonlyFinbar/spotify-status/issues"
+  },
+  "homepage": "https://github.com/OneAndonlyFinbar/spotify-status#readme"
+}
