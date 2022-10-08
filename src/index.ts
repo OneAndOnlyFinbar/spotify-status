@@ -3,7 +3,7 @@ import * as mysql from 'mysql2';
 import 'dotenv/config';
 import fetch from 'node-fetch';
 import { Routes, TokenManager } from './Structures';
-import { download, roundImage, fitText } from './Utils';
+import { download, roundImage, fitText, formatDuration } from './Utils';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 
 const connection: mysql.Connection = mysql.createConnection({
@@ -63,6 +63,7 @@ app.get('/current/:userId', async (req, res) => {
 
   await download(currentRequest.item.album.images[0].url, `./temp/${currentRequest.item.album.id}.png`);
   const albumImage = await loadImage(`./temp/${currentRequest.item.album.id}.png`);
+  roundImage(albumCtx, 0, 0, 200, 200, 20);
   albumCtx.drawImage(albumImage, 0, 0, 200, 200);
   ctx.drawImage(albumCanvas, 0, 0, 200, 200);
 
@@ -72,11 +73,16 @@ app.get('/current/:userId', async (req, res) => {
   fitText(ctx, currentRequest.item.name, 260, 30);
   ctx.fillText(currentRequest.item.name, 220, 50);
 
+  // Album Name
+  ctx.font = '20px sans-serif';
+  ctx.fillStyle = '#959595';
+  fitText(ctx, currentRequest.item.album.name, 260, 20);
+  ctx.fillText(`on ${currentRequest.item.album.name}`, 220, 80);
+
   // Artist Name
   ctx.font = '20px Arial';
-  ctx.fillStyle = '#959595';
-  fitText(ctx, currentRequest.item.artists[0].name, 260, 20);
-  ctx.fillText(currentRequest.item.artists[0].name, 220, 80);
+  fitText(ctx, currentRequest.item.artists.map(artist => artist.name).join(', '), 260, 20);
+  ctx.fillText(`by ${currentRequest.item.artists.map(artist => artist.name).join(', ')}`, 220, 110);
 
   // Progress Bar
   ctx.fillStyle = '#fff';
@@ -88,10 +94,10 @@ app.get('/current/:userId', async (req, res) => {
   ctx.arc(220 + 250 * (currentRequest.progress_ms / currentRequest.item.duration_ms), 185, 5, 0, 2 * Math.PI);
   ctx.fill();
 
-  // Progress Bar Text, place next to each other, progress:duration
+  // Progress Bar Text
   ctx.font = '15px Arial';
   ctx.fillStyle = '#fff';
-  ctx.fillText(`${Math.floor(currentRequest.progress_ms / 1000 / 60)}:${Math.floor(currentRequest.progress_ms / 1000 % 60)} / ${Math.floor(currentRequest.item.duration_ms / 1000 / 60)}:${Math.floor(currentRequest.item.duration_ms / 1000 % 60)}`, 220, 170);
+  ctx.fillText(`${formatDuration(currentRequest.progress_ms)} / ${formatDuration(currentRequest.item.duration_ms)}`, 220, 170);
 
   res.writeHead(200, { contentType: 'image/png' });
   res.end(canvas.toBuffer('image/png'));
