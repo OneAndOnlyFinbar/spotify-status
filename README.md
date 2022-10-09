@@ -6,6 +6,7 @@ API which gets your current playing status on spotify and compiles it into a pre
 <img src=".github/images/spotify-status-example.png">
 
 # Usage
+Working on deploying this to a server, but for now you can run it locally.
 
 # Hosting your own version
 1. Clone the repository and install the dependencies
