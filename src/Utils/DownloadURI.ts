@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import * as fs from 'fs';
 
-export function download(url: string, path: string): Promise<void> {
+export function downloadURI(url: string, path: string): Promise<void> {
   return new Promise((resolve) => {
     fetch(url).then(res => {
       const dest = fs.createWriteStream(path);

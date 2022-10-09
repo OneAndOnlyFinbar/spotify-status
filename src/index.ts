@@ -1,9 +1,10 @@
 import * as express from 'express';
 import * as mysql from 'mysql2';
-import 'dotenv/config';
+import * as fs from 'fs';
 import fetch from 'node-fetch';
+import 'dotenv/config';
 import { Routes, TokenManager } from './Structures';
-import { download, roundImage, fitText, formatDuration } from './Utils';
+import { downloadURI, roundImage, fitText, formatDuration, canvasError } from './Utils';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 
 const connection: mysql.Connection = mysql.createConnection({
@@ -47,11 +48,18 @@ app.get('/current/:userId', async (req, res) => {
   const token = await tokenManager.getUserToken(req.params.userId);
   if (!token) return res.json({ success: false, error: 'Invalid token' });
 
-  const currentRequest = await (await fetch(Routes.CURRENTLY_PLAYING, {
+  let currentRequest = await fetch(Routes.CURRENTLY_PLAYING, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
-  })).json();
+  });
+  if (currentRequest.status === 204) {
+    const canvas = canvasError('Nothing is currently playing');
+    res.set('Content-Type', 'image/png');
+    return res.end(canvas.toBuffer('image/png'));
+  } else
+    currentRequest = await currentRequest.json();
+
   const canvas = createCanvas(500, 200);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#212121';
@@ -61,10 +69,10 @@ app.get('/current/:userId', async (req, res) => {
   const albumCanvas = createCanvas(200, 200);
   const albumCtx = albumCanvas.getContext('2d');
 
-  await download(currentRequest.item.album.images[0].url, `./temp/${currentRequest.item.album.id}.png`);
+  await downloadURI(currentRequest.item.album.images[0].url, `./temp/${currentRequest.item.album.id}.png`);
   const albumImage = await loadImage(`./temp/${currentRequest.item.album.id}.png`);
-  roundImage(albumCtx, 0, 0, 200, 200, 20);
-  albumCtx.drawImage(albumImage, 0, 0, 200, 200);
+  roundImage(albumCtx, 0, 0, 200, 200, 40);
+  albumCtx.drawImage(albumImage, 10, 10, 180, 180);
   ctx.drawImage(albumCanvas, 0, 0, 200, 200);
 
   // Song Name
@@ -81,13 +89,13 @@ app.get('/current/:userId', async (req, res) => {
 
   // Artist Name
   ctx.font = '20px Arial';
-  fitText(ctx, currentRequest.item.artists.map(artist => artist.name).join(', '), 260, 20);
+  fitText(ctx, currentRequest.item.artists.map(artist => artist.name).join(', '), 240, 20);
   ctx.fillText(`by ${currentRequest.item.artists.map(artist => artist.name).join(', ')}`, 220, 110);
 
   // Progress Bar
   ctx.fillStyle = '#fff';
   ctx.fillRect(220, 180, 250, 10);
-  ctx.fillStyle = '#1db954';
+  ctx.fillStyle = '#1ed760';
   ctx.fillRect(220, 180, 250 * (currentRequest.progress_ms / currentRequest.item.duration_ms), 10);
   ctx.fillStyle = '#0e5a29';
   ctx.beginPath();
@@ -101,6 +109,8 @@ app.get('/current/:userId', async (req, res) => {
 
   res.writeHead(200, { contentType: 'image/png' });
   res.end(canvas.toBuffer('image/png'));
+
+  fs.unlinkSync(`./temp/${currentRequest.item.album.id}.png`);
 });
 
 app.listen(3000, () => {
