@@ -1,4 +1,4 @@
-import { Connection } from 'mysql2';
+import { Connection, RowDataPacket } from 'mysql2';
 import { Routes } from './Routes';
 import fetch from 'node-fetch';
 
@@ -39,6 +39,7 @@ export class TokenManager {
         return new Promise((resolve) => {
             this.database.query('SELECT * FROM tokens WHERE userId = ?', [userId], async (err, results) => {
                 if (err) return resolve(null);
+                if ((results as RowDataPacket[]).length === 0) return resolve(null);
                 if (results[0].expiresAt < Date.now()) return resolve(await this._refreshToken(userId) as string);
                 resolve(results[0].accessToken);
             });
