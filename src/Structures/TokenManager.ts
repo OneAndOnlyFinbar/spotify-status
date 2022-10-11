@@ -1,5 +1,6 @@
 import { Connection } from 'mysql2';
 import { Routes } from './Routes';
+import fetch from 'node-fetch';
 
 export class TokenManager {
     database: Connection;
