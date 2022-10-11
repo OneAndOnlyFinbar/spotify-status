@@ -16,6 +16,7 @@
   "dependencies": {
     "@napi-rs/canvas": "^0.1.30",
     "@types/express": "^4.17.14",
+    "chalk": "^4.1.2",
     "dotenv": "^16.0.3",
     "express": "^4.18.1",
     "mysql2": "^2.3.3",

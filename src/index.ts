@@ -3,11 +3,10 @@ import * as mysql from 'mysql2';
 import * as fs from 'fs';
 import fetch from 'node-fetch';
 import 'dotenv/config';
-import { Routes, TokenManager } from './Structures';
+import { Routes, TokenManager, Logger } from './Structures';
 import { downloadURI, roundImage, fitText, formatDuration, canvasError } from './Utils';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { OkPacket } from 'mysql2';
-
 
 const connection: mysql.Connection = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -16,22 +15,12 @@ const connection: mysql.Connection = mysql.createConnection({
   database: process.env.DB_NAME
 });
 const app: express.Application = express();
-const tokenManager = new TokenManager(connection);
+const tokenManager: TokenManager = new TokenManager(connection);
+const logger: Logger = new Logger();
 
 app.get('/', (req, res) => {
   res.redirect('/authorize');
 });
-
-app.get('/unlink/:userId', (req, res) => {
-  const userId = req.params.userId;
-  //remove user token from database if exists
-  connection.query('DELETE FROM tokens WHERE userId = ?', [userId], (err, results) => {
-    if (err) return res.send('Error while unlinking your account.');
-    if ((results as OkPacket).affectedRows === 0) return res.send('You are not linked to any account.');
-    res.send('Successfully unlinked your account.');
-});
-})
-;
 
 app.get('/authorize', (req, res) => {
   res.redirect(Routes.SPOTIFY_AUTH(process.env.SPOTIFY_CLIENT_ID, process.env.SPOTIFY_REDIRECT_URI, ['user-read-currently-playing']));
@@ -55,11 +44,24 @@ app.get('/callback', async (req, res) => {
   })).json();
   await tokenManager.setUserToken(userRequest.id, tokenRequest.access_token, tokenRequest.refresh_token, tokenRequest.expires_in);
   res.send('Success!');
+  logger.green(`User ${userRequest.id} authorized.`);
+});
+
+app.get('/unlink/:userId', (req, res) => {
+  const userId = req.params.userId;
+  connection.query('DELETE FROM tokens WHERE userId = ?', [userId], (err, results) => {
+    if (err){
+      logger.error(err as unknown as string);
+      return res.send('Error while unlinking your account.');
+    }
+    if ((results as OkPacket).affectedRows === 0) return res.send('You are not linked to any account.');
+    res.send('Successfully unlinked your account.');
+    logger.red(`Unlinked account ${userId}`);
+  });
 });
 
 app.get('/current/:userId', async (req, res) => {
   const token = await tokenManager.getUserToken(req.params.userId);
-  console.log(token)
   if (!token) return res.json({ success: false, error: 'Invalid Token/Account Not Linked' });
 
   let currentRequest = await fetch(Routes.CURRENTLY_PLAYING, {
@@ -143,8 +145,9 @@ app.get('/current/:userId', async (req, res) => {
   res.end(canvas.toBuffer('image/png'));
 
   fs.unlinkSync(`./temp/${currentRequest.item.album.id}.png`);
+  logger.green(`Sent current song for ${req.params.userId}`);
 });
 
 app.listen(3000, () => {
-  console.log('Listening on port 3000');
+  logger.green(`Listening on port 3000`);
 });
