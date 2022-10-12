@@ -43,7 +43,7 @@ app.get('/callback', async (req, res) => {
         }
     })).json();
     await tokenManager.setUserToken(userRequest.id, tokenRequest.access_token, tokenRequest.refresh_token, tokenRequest.expires_in);
-    res.send('Success!');
+    res.sendFile(__dirname + '/Pages/Authorized.html');
     logger.green(`User ${userRequest.id} authorized.`);
 });
 
