@@ -6,21 +6,10 @@ API which gets your current playing status on spotify and compiles it into a pre
 <img src=".github/images/spotify-status-example.png">
 
 # Usage
-Working on deploying this to a server, but for now you can run it locally.
+Notice: Awaiting verification from spotify, url will not work.
+
+1. Link account https://spotify-status.finbar.xyz/
+2. After linking go to https://spotify-status.finbar.xyz/USER_ID to get a given users playing status
 
 # Hosting your own version
-1. Clone the repository and install the dependencies
-```bash
-git clone https://github.com/OneAndonlyFinbar/spotify-status.git
-cd spotify-status
-```
-2. Create a new application on the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/applications)
-3. Add `http://localhost:3000/callback` as a redirect URI
-4. Fill required fields in the `.env.example` file and rename it to `.env`
-5. Execute SQL script in `database.sql`
-6. Compile and run the application
-```bash
-tsc
-cd dist
-node index
-```
+Better instructions comming soon :tm:
