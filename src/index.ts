@@ -141,7 +141,7 @@ app.get('/current/:userId', async (req, res) => {
     ctx.fillStyle = progressTextColor;
     ctx.fillText(`${formatDuration(currentRequest.progress_ms)} / ${formatDuration(currentRequest.item.duration_ms)}`, 220, 160);
 
-    res.writeHead(200, { contentType: 'image/png', 'cache-control': 'no-cache' });
+    res.writeHead(200, { contentType: 'image/png', 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
     res.end(canvas.toBuffer('image/png'));
 
     fs.unlinkSync(`./temp/${currentRequest.item.album.id}.png`);
