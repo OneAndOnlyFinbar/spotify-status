@@ -141,8 +141,10 @@ app.get('/current/:userId', async (req, res) => {
     ctx.fillStyle = progressTextColor;
     ctx.fillText(`${formatDuration(currentRequest.progress_ms)} / ${formatDuration(currentRequest.item.duration_ms)}`, 220, 160);
 
-    res.writeHead(200, { contentType: 'image/png', 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' });
-    res.end(canvas.toBuffer('image/png'));
+    res.setHeader('Cache-Control', 'public, max-age=5');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('contentType', 'image/png');
+    res.status(200).end(canvas.toBuffer('image/png'));
 
     fs.unlinkSync(`./temp/${currentRequest.item.album.id}.png`);
     logger.green(`Sent current song for ${req.params.userId}`);
