@@ -3,7 +3,7 @@ API which gets your current playing status on spotify and compiles it into a pre
 
 # Example
 <br>
-<img src=".github/images/spotify-status-example.png">
+<img src=".github/spotify-status-example.png">
 
 # Usage
 Notice: Awaiting verification from spotify, url will not work.
