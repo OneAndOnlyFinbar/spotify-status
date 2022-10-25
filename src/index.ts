@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import fetch from 'node-fetch';
 import 'dotenv/config';
 import { Routes, TokenManager, Logger } from './Structures';
-import { downloadURI, roundImage, fitText, formatDuration, canvasError } from './Utils';
+import { downloadURI, roundImage, fitText, formatDuration, canvasError, hexToRGB } from './Utils';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { OkPacket } from 'mysql2';
 
@@ -50,7 +50,7 @@ app.get('/callback', async (req, res) => {
 app.get('/unlink/:userId', (req, res) => {
     const userId = req.params.userId;
     connection.query('DELETE FROM tokens WHERE userId = ?', [userId], (err, results) => {
-        if (err){
+        if (err) {
             logger.error(err as unknown as string);
             return res.send('Error while unlinking your account.');
         }
@@ -104,6 +104,15 @@ app.get('/current/:userId', async (req, res) => {
     roundImage(albumCtx, 0, 0, 200, 200, 40);
     albumCtx.drawImage(albumImage, 10, 10, 180, 180);
     ctx.drawImage(albumCanvas, 0, 0, 200, 200);
+
+    // Spotify Logo
+    ctx.fillStyle = backgroundColor;
+    ctx.beginPath();
+    ctx.arc(25, 175, 25, 0, 2 * Math.PI);
+    ctx.fill();
+    const spotifyLogo = hexToRGB(backgroundColor).r < 127 ? './Resources/Spotify_Icon_RGB_White.png' : './Resources/Spotify_Icon_RGB_Green.png';
+    const spotifyIcon = await loadImage(spotifyLogo);
+    ctx.drawImage(spotifyIcon, 5, 155, 40, 40);
 
     // Song Name
     ctx.font = `30px ${customFont}`;
